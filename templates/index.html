@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>បម្លែង PDF ទៅ Word លឿន និងឥតគិតថ្លៃ</title>
+    <style>
+        body { font-family: 'Khmer OS Battambang', Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f7f6; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        .btn { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 15px; }
+        .btn:hover { background-color: #0056b3; }
+        .donation-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
+        .qr-code { width: 200px; border-radius: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>បម្លែងឯកសារ PDF ទៅជា Word</h2>
+        <p>សូមជ្រើសរើសឯកសារ PDF របស់អ្នកនៅទីនេះ</p>
+        
+        <form action="/convert" method="POST" enctype="multipart/form-data">
+            <input type="file" name="pdf_file" accept=".pdf" required>
+            <br>
+            <button type="submit" class="btn">បម្លែងឥឡូវនេះ</button>
+        </form>
+
+        <div class="donation-section">
+            <h3>គាំទ្រការបង្កើតកម្មវិធីនេះ ☕</h3>
+            <p>ប្រសិនបើកម្មវិធីនេះមានប្រយោជន៍សម្រាប់អ្នក លោកអ្នកអាចចូលរួមឧបត្ថម្ភដើម្បីជួយផ្គត់ផ្គង់ថ្លៃ Server តាមរយៈ QR Code ខាងក្រោម៖</p>
+            <img src="https://via.placeholder.com/200?text=ABA+QR+Code" alt="ABA QR Code" class="qr-code">
+            <p><strong>គណនី ABA:</strong> 012 345 678 (ឈ្មោះរបស់អ្នក)</p>
+        </div>
+    </div>
+
+</body>
+</html>
