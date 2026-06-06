@@ -20,3 +20,21 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # បើកដំណើរការវេបសាយ (ប្រើប្រាស់ Port ដែល Render ផ្ដល់ឲ្យ)
 CMD gunicorn --bind 0.0.0.0:$PORT app:app
+FROM python:3.12-bullseye
+
+# បន្ថែមការដំឡើង tesseract-ocr និងភាសាខ្មែរ (khm) ព្រមទាំងអង់គ្លេស (eng)
+RUN apt-get update && apt-get install -y \
+    libfontconfig1 \
+    libicu-dev \
+    libgdiplus \
+    fonts-khmeros \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-khm \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . /app
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD gunicorn --bind 0.0.0.0:$PORT app:app
