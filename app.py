@@ -3,6 +3,7 @@ from pdf2docx import Converter
 import os
 
 app = Flask(__name__)
+
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
