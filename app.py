@@ -85,18 +85,18 @@ def convert_img():
     file.save(img_path)
 
     try:
-        # ១. អានអក្សរពីរូបភាព ដោយប្រាប់ Tesseract ឲ្យស្វែងរកភាសាខ្មែរ និងអង់គ្លេស (khm+eng)
+        # ១. អានអក្សរពីរូបភាព
         extracted_text = pytesseract.image_to_string(Image.open(img_path), lang='khm+eng')
         
-        # ២. បង្កើតឯកសារ Word ថ្មី រួចសរសេរអក្សរចូល
+        # ២. បោសសម្អាតអក្សរ (លុប Control Characters ដែលធ្វើឱ្យ Word គាំង)
+        clean_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', extracted_text)
+        
+        # ៣. បង្កើតឯកសារ Word ថ្មី រួចសរសេរអក្សរដែលស្អាតនោះចូល
         doc = Document()
-        doc.add_paragraph(extracted_text)
+        doc.add_paragraph(clean_text)
         doc.save(docx_path)
         
         os.remove(img_path)
         return send_file(docx_path, as_attachment=True)
     except Exception as e:
         return f"{text['error_convert']} {str(e)}", 500
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
