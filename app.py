@@ -4,6 +4,7 @@ import pytesseract
 from PIL import Image
 from docx import Document
 import os
+import re
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
