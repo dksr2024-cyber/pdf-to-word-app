@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ text.title }}</title>
+    <style>
+        body { font-family: 'Khmer OS Battambang', Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f7f6; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 500px; margin: auto; position: relative; }
+        .btn { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 15px; font-family: 'Khmer OS Battambang', Arial, sans-serif;}
+        .btn:hover { background-color: #0056b3; }
+        .donation-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
+        .qr-code { width: 200px; border-radius: 10px; margin-top: 10px; }
+        
+        /* រចនាប៊ូតុងប្តូរភាសា */
+        .lang-switch { position: absolute; top: 15px; right: 20px; }
+        .lang-switch a { text-decoration: none; font-weight: bold; padding: 5px 10px; border-radius: 5px; font-size: 14px;}
+        .lang-switch a.active { background-color: #007bff; color: white; }
+        .lang-switch a:not(.active) { background-color: #e9ecef; color: #333; }
+
+        /* រចនា Loading Spinner */
+        #loading-overlay { display: none; margin-top: 20px; }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text { color: #007bff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="lang-switch">
+            <a href="/?lang=km" class="{% if current_lang == 'km' %}active{% endif %}">ខ្មែរ</a>
+            <a href="/?lang=en" class="{% if current_lang == 'en' %}active{% endif %}">EN</a>
+        </div>
+
+        <h2>{{ text.header }}</h2>
+        <p>{{ text.instruction }}</p>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="hidden" name="lang" value="{{ current_lang }}">
+            <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" required>
+            <br>
+            <button type="submit" id="submitBtn" class="btn">{{ text.convert_btn }}</button>
+        </form>
+
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <p class="loading-text">{{ text.loading }}</p>
+        </div>
+
+        <div class="donation-section">
+            <h3>{{ text.support_header }}</h3>
+            <p>{{ text.support_text }}</p>
+            <img src="{{ url_for('static', filename='qr.jpg') }}" alt="ABA QR Code" class="qr-code">
+            <p><strong>{{ text.account }}</strong> 000409692 (SVAY KRISNA)</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // ទប់ស្កាត់កុំឲ្យ Page Refresh ពេលចុច Submit
+            
+            let btn = document.getElementById('submitBtn');
+            let loading = document.getElementById('loading-overlay');
+            let fileInput = document.getElementById('pdf_file');
+            
+            // ១. លាក់ប៊ូតុងបម្លែង និងបង្ហាញរង្វង់ Loading
+            btn.style.display = 'none';
+            loading.style.display = 'block';
+
+            let formData = new FormData(this);
+
+            try {
+                // ២. បញ្ជូនឯកសារទៅកាន់ Backend
+                let response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // ៣. ពេលបម្លែងជោគជ័យ ទាញយកឯកសារ Word មកវិញ
+                    let blob = await response.blob();
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = url;
+                    
+                    // កំណត់ឈ្មោះឯកសារថ្មី ដោយប្ដូរកន្ទុយ .pdf ទៅជា .docx
+                    let originalName = fileInput.files[0].name;
+                    a.download = originalName.replace(/\.[^/.]+$/, "") + ".docx"; 
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    // បង្ហាញសារ Error ប្រសិនបើមានបញ្ហាពីខាង Backend
+                    let errorText = await response.text();
+                    alert(errorText);
+                }
+            } catch (error) {
+                alert("មានបញ្ហាក្នុងការភ្ជាប់ទៅកាន់ Server សូមព្យាយាមម្តងទៀត!");
+            }
+
+            // ៤. ពេលចប់សព្វគ្រប់ លាក់ Loading និងបង្ហាញប៊ូតុងបម្លែងមកវិញ
+            loading.style.display = 'none';
+            btn.style.display = 'inline-block';
+            
+            // (ជម្រើស) Clear ឯកសារចាស់ចេញពីប្រអប់ជ្រើសរើស ក្រោយពេល Download ចប់
+            // this.reset(); 
+        });
+    </script>
+
+</body>
+</html>
