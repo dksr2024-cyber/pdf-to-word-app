@@ -1,83 +1,98 @@
 from flask import Flask, request, send_file, render_template
-import aspose.words as aw  # ប្រើប្រាស់ aspose-words ជំនួស pdf2docx
+import aspose.words as aw
+import pytesseract
+from PIL import Image
+from docx import Document
 import os
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# ទិន្នន័យភាសា (Translations) សម្រាប់ប្រើប្រាស់ពីរភាសា
+# ទិន្នន័យភាសា (បន្ថែមពាក្យសម្រាប់មុខងាររូបភាព)
 LANGUAGES = {
     'km': {
-        'title': 'បម្លែង PDF ទៅ Word លឿន និងឥតគិតថ្លៃ',
-        'header': 'បម្លែងឯកសារ PDF ទៅជា Word',
-        'instruction': 'សូមជ្រើសរើសឯកសារ PDF របស់អ្នកនៅទីនេះ',
+        'title': 'បម្លែងឯកសាររហ័ស និងឥតគិតថ្លៃ',
+        'pdf_header': 'បម្លែង PDF ទៅជា Word',
+        'img_header': 'បម្លែងរូបភាព ទៅជា Word',
+        'instruction_pdf': 'សូមជ្រើសរើសឯកសារ PDF',
+        'instruction_img': 'សូមជ្រើសរើសរូបភាព (JPG, PNG)',
         'convert_btn': 'បម្លែងឥឡូវនេះ',
         'loading': 'កំពុងបម្លែងឯកសារ សូមរង់ចាំបន្តិច...',
         'support_header': 'គាំទ្រការបង្កើតកម្មវិធីនេះ ☕',
-        'support_text': 'ប្រសិនបើកម្មវិធីនេះមានប្រយោជន៍សម្រាប់អ្នក លោកអ្នកអាចចូលរួមឧបត្ថម្ភដើម្បីជួយផ្គត់ផ្គង់ថ្លៃ Server តាមរយៈ QR Code ឬលេខគណនីរបស់ខ្ញុំខាងក្រោម សូមអរគុណ!៖',
+        'support_text': 'សូមអរគុណសម្រាប់ការគាំទ្រ!',
         'account': 'គណនី ABA:',
-        'error_no_file': 'សូមជ្រើសរើសឯកសារ PDF',
         'error_empty': 'មិនមានឯកសារត្រូវបានជ្រើសរើសទេ',
-        'error_convert': 'មានបញ្ហាក្នុងការបម្លែងឯកសារ៖ '
+        'error_convert': 'មានបញ្ហា៖ '
     },
     'en': {
-        'title': 'Fast & Free PDF to Word Converter',
-        'header': 'Convert PDF to Word',
-        'instruction': 'Please select your PDF file here',
+        'title': 'Fast & Free Converter',
+        'pdf_header': 'Convert PDF to Word',
+        'img_header': 'Convert Image to Word',
+        'instruction_pdf': 'Please select your PDF file',
+        'instruction_img': 'Please select your Image (JPG, PNG)',
         'convert_btn': 'Convert Now',
-        'loading': 'Converting file, please wait...',
+        'loading': 'Converting, please wait...',
         'support_header': 'Support This App ☕',
-        'support_text': 'If you find this app useful, you can support server costs via the QR Code or account number below. Thank you!',
+        'support_text': 'Thank you for your support!',
         'account': 'ABA Account:',
-        'error_no_file': 'Please select a PDF file',
         'error_empty': 'No file selected',
-        'error_convert': 'Error during conversion: '
+        'error_convert': 'Error: '
     }
 }
 
 @app.route('/')
 def index():
-    # ទាញយកភាសាពី URL (ឧទាហរណ៍: /?lang=en) បើមិនមានទេ យក 'km' ជាភាសាដើម
     lang = request.args.get('lang', 'km')
-    if lang not in LANGUAGES:
-        lang = 'km'
-    
-    # ទាញយកអត្ថបទទៅតាមភាសាដែលបានរើស រួចបញ្ជូនទៅ HTML
-    text = LANGUAGES[lang]
-    return render_template('index.html', text=text, current_lang=lang)
+    if lang not in LANGUAGES: lang = 'km'
+    return render_template('index.html', text=LANGUAGES[lang], current_lang=lang)
 
-@app.route('/convert', methods=['POST'])
-def convert():
-    # ចាប់យកភាសាដែលបានបញ្ជូនពីទម្រង់ Form ដើម្បីបង្ហាញ Error ជាភាសាត្រឹមត្រូវ
+# --- មុខងារទី១៖ បម្លែង PDF ---
+@app.route('/convert-pdf', methods=['POST'])
+def convert_pdf():
     lang = request.form.get('lang', 'km')
     text = LANGUAGES.get(lang, LANGUAGES['km'])
-
-    # ពិនិត្យមើលថាតើមានការបញ្ជូនឯកសារមកឬទេ
-    if 'pdf_file' not in request.files:
-        return text['error_no_file'], 400
     
-    file = request.files['pdf_file']
-    if file.filename == '':
-        return text['error_empty'], 400
+    file = request.files.get('pdf_file')
+    if not file or file.filename == '': return text['error_empty'], 400
 
-    # រៀបចំទីតាំងរក្សាទុកឯកសារ
     pdf_path = os.path.join(UPLOAD_FOLDER, file.filename)
     docx_filename = file.filename.rsplit('.', 1)[0] + '.docx'
     docx_path = os.path.join(UPLOAD_FOLDER, docx_filename)
-
-    # រក្សាទុកឯកសារ PDF បណ្ដោះអាសន្ន
     file.save(pdf_path)
 
     try:
-        # ការបម្លែងឯកសារដោយប្រើប្រាស់ Aspose.Words 
         doc = aw.Document(pdf_path)
         doc.save(docx_path)
-
-        # លុបឯកសារ PDF ចោលវិញដើម្បីសន្សំទំហំផ្ទុក
         os.remove(pdf_path)
+        return send_file(docx_path, as_attachment=True)
+    except Exception as e:
+        return f"{text['error_convert']} {str(e)}", 500
+
+# --- មុខងារទី២៖ បម្លែង រូបភាព ទៅ Word (ថ្មី) ---
+@app.route('/convert-img', methods=['POST'])
+def convert_img():
+    lang = request.form.get('lang', 'km')
+    text = LANGUAGES.get(lang, LANGUAGES['km'])
+    
+    file = request.files.get('image_file')
+    if not file or file.filename == '': return text['error_empty'], 400
+
+    img_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    docx_filename = file.filename.rsplit('.', 1)[0] + '.docx'
+    docx_path = os.path.join(UPLOAD_FOLDER, docx_filename)
+    file.save(img_path)
+
+    try:
+        # ១. អានអក្សរពីរូបភាព ដោយប្រាប់ Tesseract ឲ្យស្វែងរកភាសាខ្មែរ និងអង់គ្លេស (khm+eng)
+        extracted_text = pytesseract.image_to_string(Image.open(img_path), lang='khm+eng')
         
-        # បញ្ជូនឯកសារ Word ត្រឡប់ទៅឲ្យអ្នកប្រើប្រាស់វិញ
+        # ២. បង្កើតឯកសារ Word ថ្មី រួចសរសេរអក្សរចូល
+        doc = Document()
+        doc.add_paragraph(extracted_text)
+        doc.save(docx_path)
+        
+        os.remove(img_path)
         return send_file(docx_path, as_attachment=True)
     except Exception as e:
         return f"{text['error_convert']} {str(e)}", 500
