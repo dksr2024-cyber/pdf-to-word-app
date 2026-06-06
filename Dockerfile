@@ -1,10 +1,11 @@
-# ប្រើប្រាស់ Python 3.12 ជំនាន់ស្រាលជាមូលដ្ឋាន
-FROM python:3.12-slim
+# ប្រើប្រាស់ Python 3.12 ជំនាន់ Bullseye (Debian 11) ដែលមានភាពត្រូវគ្នា ១០០% ជាមួយ Aspose
+FROM python:3.12-bullseye
 
-# ដំឡើងបណ្ណាល័យប្រព័ន្ធ ព្រមទាំងដំឡើង "ហ្វុន្តខ្មែរ" ចូលទៅក្នុង Server ផ្ទាល់!
+# ដំឡើងបណ្ណាល័យប្រព័ន្ធ ព្រមទាំងហ្វុន្តខ្មែរ និង libgdiplus សម្រាប់គូររូបភាព
 RUN apt-get update && apt-get install -y \
     libfontconfig1 \
     libicu-dev \
+    libgdiplus \
     fonts-khmeros \
     && rm -rf /var/lib/apt/lists/*
 
